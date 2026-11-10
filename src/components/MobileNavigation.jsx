@@ -1,29 +1,38 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Drawer } from 'antd'
 import { NavLink, useLocation } from 'react-router-dom'
-import { GAMES } from '../games'
+import { GAMES, isGamePath } from '../games'
 import { useThemeSettings } from '../context/ThemeContext'
 import './MobileNavigation.css'
 
 const primaryRoutes = [
     { path: '/', label: 'Home', icon: '⌂' },
-    ...GAMES.map(game => ({ path: game.path, label: game.name, icon: '◆' })),
+    ...GAMES.filter(game => game.mobilePrimary).map(game => ({ path: game.path, label: game.name, icon: '◆' })),
 ]
 
 const comingSoon = ['Favourites', 'Recent', 'Challenges', 'My Bets']
 
-function MobileNavigation({ drawerOpen, onClose, returnFocusRef }) {
+function MobileNavigation({ drawerOpen, onClose, onOpen, returnFocusRef }) {
     const location = useLocation()
     const { paletteId, palettes, setPaletteId } = useThemeSettings()
+    const [search, setSearch] = useState('')
 
     useEffect(() => onClose(), [location.pathname, onClose])
+
+    const visibleGames = useMemo(() => {
+        const query = search.trim().toLowerCase()
+        return query ? GAMES.filter(game => game.navLabel.toLowerCase().includes(query)) : GAMES
+    }, [search])
+
+    const inSecondaryGame = isGamePath(location.pathname)
+        && !primaryRoutes.some(route => route.path !== '/' && location.pathname.startsWith(route.path))
 
     return (
         <>
             <Drawer
                 title="Menu"
                 placement="left"
-                width="min(88vw, 360px)"
+                size="min(88vw, 360px)"
                 open={drawerOpen}
                 onClose={onClose}
                 afterOpenChange={open => {
@@ -33,8 +42,16 @@ function MobileNavigation({ drawerOpen, onClose, returnFocusRef }) {
             >
                 <label className="mobile-drawer-field">
                     <span>Search</span>
-                    <input type="search" placeholder="Search your game" />
+                    <input type="search" placeholder="Search your game" value={search} onChange={event => setSearch(event.target.value)} />
                 </label>
+                <nav className="mobile-drawer-games" aria-label="All games">
+                    {visibleGames.map(game => (
+                        <NavLink key={game.id} to={game.path} className={({ isActive }) => isActive ? 'active' : ''}>
+                            {game.navLabel}
+                        </NavLink>
+                    ))}
+                    {visibleGames.length === 0 && <p>No games found</p>}
+                </nav>
                 <label className="mobile-drawer-field">
                     <span>Palette</span>
                     <select value={paletteId} onChange={event => setPaletteId(event.target.value)}>
@@ -70,6 +87,10 @@ function MobileNavigation({ drawerOpen, onClose, returnFocusRef }) {
                         <span>{route.label}</span>
                     </NavLink>
                 ))}
+                <button type="button" className={inSecondaryGame ? 'active' : ''} onClick={onOpen}>
+                    <span aria-hidden="true">☰</span>
+                    <span>All games</span>
+                </button>
             </nav>
         </>
     )

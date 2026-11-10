@@ -99,6 +99,10 @@
 }
 
 .hero-primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
     min-height: 46px;
     padding: 0 22px;
     border: 0;

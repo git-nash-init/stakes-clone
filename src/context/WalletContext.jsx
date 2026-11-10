@@ -25,6 +25,7 @@ export function WalletProvider({ children }) {
     // Toast system
     const [toasts, setToasts] = useState([])
     const toastIdRef = useRef(0)
+    const transactionIdRef = useRef(0)
 
     const showToast = useCallback((type, title, description, duration = 3000) => {
         const id = ++toastIdRef.current
@@ -54,7 +55,7 @@ export function WalletProvider({ children }) {
 
         const newBal = setStoredBalance(balanceRef.current - amt)
         setTransactions(txs => [{
-            id: Date.now(),
+            id: ++transactionIdRef.current,
             type: 'bet',
             amount: -amt,
             balance: newBal,
@@ -71,7 +72,7 @@ export function WalletProvider({ children }) {
 
         const newBal = setStoredBalance(balanceRef.current + amt)
         setTransactions(txs => [{
-            id: Date.now(),
+            id: ++transactionIdRef.current,
             type: 'win',
             amount: amt,
             balance: newBal,
@@ -86,7 +87,7 @@ export function WalletProvider({ children }) {
 
         const newBal = setStoredBalance(balanceRef.current + amt)
         setTransactions(txs => [{
-            id: Date.now(),
+            id: ++transactionIdRef.current,
             type: 'deposit',
             amount: amt,
             balance: newBal,
@@ -98,7 +99,7 @@ export function WalletProvider({ children }) {
     const resetBalance = useCallback(() => {
         updateBalance(INITIAL_BALANCE)
         setTransactions([{
-            id: Date.now(),
+            id: ++transactionIdRef.current,
             type: 'reset',
             amount: INITIAL_BALANCE,
             balance: INITIAL_BALANCE,

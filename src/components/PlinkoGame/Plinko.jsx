@@ -129,8 +129,8 @@ function Plinko({
                 onBallEnterBin: (data) => {
                     onBallEnterBin?.(data);
                 },
-                onBalanceChange: (amount) => {
-                    onBalanceChange?.(amount);
+                onBalanceChange: (amount, ballType) => {
+                    onBalanceChange?.(amount, ballType);
                 },
             });
 

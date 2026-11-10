@@ -29,6 +29,7 @@ function Layout() {
             <MobileNavigation
                 drawerOpen={isMobileMenuOpen}
                 onClose={closeMobileMenu}
+                onOpen={() => setIsMobileMenuOpen(true)}
                 returnFocusRef={mobileMenuButtonRef}
             />
         </div>

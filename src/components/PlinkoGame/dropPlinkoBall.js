@@ -18,7 +18,7 @@ export async function dropPlinkoBall({
         const fairnessResult = await provablyFair.generatePlinkoPath(rowCount);
         if (isCancelled()) return 'cancelled';
         if (engine.getActiveBallCount() >= MAX_ACTIVE_BALLS) return 'busy';
-        if (!placeBet(betAmount)) return 'insufficient-funds';
+        if (!placeBet(betAmount * (currentBall.cost ?? 1))) return 'insufficient-funds';
 
         engine.updateBallStyle(currentBall.color, currentBall.image);
         const binIndex = fairnessResult.path.reduce((sum, direction) => sum + direction, 0);

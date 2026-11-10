@@ -15,7 +15,7 @@ import {
 
 const { Text } = Typography
 
-function BettingPanel({ phase, betPlaced, multiplier, onBet, onCashout }) {
+function BettingPanel({ phase, betPlaced, multiplier, onBet, onCancel, onCashout }) {
     const [activeTab, setActiveTab] = useState('manual')
     const [betAmount, setBetAmount] = useState(1)
     const [cashoutAt, setCashoutAt] = useState(2.00)
@@ -35,7 +35,9 @@ function BettingPanel({ phase, betPlaced, multiplier, onBet, onCashout }) {
 
     const handleBetClick = () => {
         if (phase === 'waiting') {
-            if (betAmount > 0) {
+            if (betPlaced) {
+                onCancel()
+            } else if (betAmount > 0) {
                 onBet(betAmount)
             }
         } else if (phase === 'running' && betPlaced) {

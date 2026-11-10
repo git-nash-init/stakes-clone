@@ -1,4 +1,5 @@
 import CONFIG from '../../config/game';
+import { isSoundMuted } from '../../../../../utils/soundManager';
 
 /**
  * Sound manager
@@ -26,21 +27,25 @@ class SoundManager {
    * Play player action sound
    */
   playPlayerAction() {
-    this.playerAction.play();
+    if (!isSoundMuted()) this.playerAction.play();
   }
 
   /**
    * Play achievement sound
    */
   playAchievement() {
-    this.achievement.play();
+    if (!isSoundMuted()) this.achievement.play();
   }
 
   /**
    * Play gameover sound
    */
   playGameOver() {
-    this.gameover.play();
+    if (this.scene.suppressGameOverSound) {
+      this.scene.suppressGameOverSound = false;
+      return;
+    }
+    if (!isSoundMuted()) this.gameover.play();
   }
 }
 

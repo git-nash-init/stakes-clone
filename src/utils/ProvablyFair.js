@@ -84,6 +84,25 @@ class ProvablyFair {
         this.serverSeedHash = await sha256(this.serverSeed);
     }
 
+    /**
+     * Derive several floats in [0, 1) for one bet, consuming exactly one nonce.
+     * Seeds and nonce are captured before the first await, so overlapping
+     * calls can never share a nonce.
+     * @param {number} count - positive integer number of floats
+     * @returns {Promise<{floats: number[], nonce: number}>}
+     */
+    async getFloats(count) {
+        if (!Number.isInteger(count) || count <= 0) {
+            throw new RangeError('getFloats: count must be a positive integer');
+        }
+
+        const { serverSeed, clientSeed } = this;
+        const nonce = this.nonce++;
+        const floats = await ProvablyFair.deriveFloats(serverSeed, clientSeed, nonce, count);
+
+        return { floats, nonce };
+    }
+
     async waitReady() {
         await this._hashReady;
     }
@@ -120,7 +139,7 @@ class ProvablyFair {
         if (result < houseEdge) return 1.00;
 
         // Formula: e = 99 / (1 - r)  =>  result in [1.00, ∞)
-        const e = Math.floor((100 / (1 - result))) / 100;
+        const e = Math.floor((99 / (1 - result))) / 100;
         return Math.max(1.00, Math.min(e, 1000.00));
     }
 
@@ -335,7 +354,10 @@ class ProvablyFair {
      * @param {string} newSeed 
      */
     async setClientSeed(newSeed) {
-        if (newSeed && newSeed.length > 0) {
+        if (newSeed && newSeed.length > 0 && newSeed !== this.clientSeed) {
+            // A new client seed always gets a new server seed. Reusing a pair
+            // would restart at nonce 0 and replay outcomes already seen.
+            await this.rotateSeed();
             this.clientSeed = newSeed;
             this.nonce = 0;
         }
@@ -351,6 +373,21 @@ class ProvablyFair {
             clientSeed: this.clientSeed,
             nonce: this.nonce,
         };
+    }
+
+    /**
+     * Recompute the floats a bet used. Each HMAC gives 8 independent 32-bit floats.
+     * @returns {Promise<number[]>}
+     */
+    static async deriveFloats(serverSeed, clientSeed, nonce, count) {
+        const floats = [];
+        for (let cursor = 0; floats.length < count; cursor++) {
+            const hash = await hmacSHA256(serverSeed, `${clientSeed}:${nonce}:${cursor}`);
+            for (let i = 0; i < 8 && floats.length < count; i++) {
+                floats.push(parseInt(hash.substr(i * 8, 8), 16) / 0x100000000);
+            }
+        }
+        return floats;
     }
 
     /**

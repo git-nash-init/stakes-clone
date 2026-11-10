@@ -53,6 +53,7 @@ import GameScene from './core/scenes/game/GameScene';
 import ProvablyFair from '../../utils/ProvablyFair';
 
 import { useWallet } from '../../context/WalletContext';
+import { useSound } from '../../hooks/useSound';
 import MobileBetSheet from '../MobileBetSheet';
 import './DinoGame.css';
 
@@ -116,6 +117,8 @@ class DinoGameInstance extends Phaser.Game {
     }
 }
 
+const SOUNDS = ['bet', 'correct', 'cashout', 'win-big'];
+
 function DinoGame() {
     App.useApp();
     const { balance, placeBet: walletPlaceBet, addWinnings, showToast } = useWallet();
@@ -134,7 +137,8 @@ function DinoGame() {
     const [totalProfit, setTotalProfit] = useState(0);
 
     // UI
-    const [soundEnabled, setSoundEnabled] = useState(true);
+    const { play: playGameSound, muted: soundMuted, toggleMuted } = useSound(SOUNDS);
+    const soundEnabled = !soundMuted;
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [statsDrawerOpen, setStatsDrawerOpen] = useState(false);
     const [fairnessModalOpen, setFairnessModalOpen] = useState(false);
@@ -324,6 +328,7 @@ function DinoGame() {
         if (betAmount <= 0 || betAmount > balance) return;
 
         if (!walletPlaceBet(betAmount)) return;
+        playGameSound('bet');
         setTotalWagered(prev => prev + betAmount);
         setGamesPlayed(prev => prev + 1);
         setGamePhase('betting');
@@ -346,7 +351,7 @@ function DinoGame() {
                 scene.events.emit(CONFIG.EVENTS.GAME_RESTART);
             }
         }
-    }, [betAmount, balance, difficulty, showToast, walletPlaceBet]);
+    }, [betAmount, balance, difficulty, showToast, walletPlaceBet, playGameSound]);
 
     // Keep placeBet ref updated for Phaser to call
     useEffect(() => {
@@ -385,6 +390,7 @@ function DinoGame() {
             setObstaclesCleared(newCleared);
             setCurrentMultiplier(newMult);
             setPotentialWin(betAmountRef.current * newMult);
+            playGameSound('correct', { volume: 0.7 });
             // Keep gamePhase as 'running' - the next WAITING_FOR_JUMP event
             // will set it to 'waiting' when the next obstacle approaches
             setGamePhase('running');
@@ -397,7 +403,7 @@ function DinoGame() {
             gameScene.events.emit(CONFIG.EVENTS.JUMP_FAIL);
             // Don't change gamePhase here - GAME_OVER event from Phaser will handle it
         }
-    }, [gamePhase, obstaclesCleared, getMultiplierForCleared, highScore, showToast]);
+    }, [gamePhase, obstaclesCleared, getMultiplierForCleared, highScore, showToast, playGameSound]);
 
     // Cash out
     const cashOut = useCallback(() => {
@@ -406,6 +412,7 @@ function DinoGame() {
 
         const winAmount = betAmountRef.current * currentMultiplier;
         addWinnings(winAmount);
+        playGameSound(currentMultiplier >= 10 ? 'win-big' : 'cashout');
         const profit = winAmount - betAmountRef.current;
         setTotalProfit(prev => prev + profit);
         setWinRecords(prev => [...prev, profit]);
@@ -421,6 +428,7 @@ function DinoGame() {
         // Disable betting mode and trigger game over to reset
         if (gameScene) {
             gameScene.events.emit(CONFIG.EVENTS.BETTING_MODE_OFF);
+            gameScene.suppressGameOverSound = true;
             gameScene.events.emit(CONFIG.EVENTS.GAME_OVER, gameScene.score, gameScene.highScore);
         }
 
@@ -919,7 +927,7 @@ function DinoGame() {
                                     <Button type="text" icon={isFullscreen ? <FullscreenExitOutlined /> : <ExpandOutlined />} className="control-btn" onClick={toggleFullscreen} />
                                 </Tooltip>
                                 <Tooltip title={soundEnabled ? "Mute" : "Unmute"}>
-                                    <Button type="text" icon={<SoundOutlined />} className={`control-btn ${!soundEnabled ? 'muted' : ''}`} onClick={() => setSoundEnabled(!soundEnabled)} />
+                                    <Button type="text" icon={<SoundOutlined />} className={`control-btn ${!soundEnabled ? 'muted' : ''}`} onClick={toggleMuted} />
                                 </Tooltip>
                                 <Tooltip title="Fairness Debug">
                                     <Button type="text" icon={<BugOutlined style={{ color: isDebugMode ? 'var(--primary)' : undefined }} />} className={`control-btn ${isDebugMode ? 'active' : ''}`} onClick={() => setIsDebugMode(!isDebugMode)} />

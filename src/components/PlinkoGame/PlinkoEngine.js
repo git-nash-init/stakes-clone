@@ -4,6 +4,7 @@
 
 import { Ball, pad, unpad } from './Ball';
 import { BIN_PAYOUTS, MAX_ACTIVE_BALLS } from './constants';
+import { playSound } from '../../utils/soundManager';
 
 const WIDTH = 760;
 const HEIGHT = 570;
@@ -133,6 +134,7 @@ class PlinkoEngine {
 
     triggerPinAnimation(pinId) {
         this.pinAnimations.set(pinId, { frames: 12 });
+        playSound('peg', { rate: 0.9 + Math.random() * 0.3, volume: 0.5 });
     }
 
     // ─── DRAWING ─────────────────────────────────────────────────────────────
@@ -217,7 +219,7 @@ class PlinkoEngine {
                 ballType: ball.type // Pass the preserved ball type back!
             });
 
-            this.onBalanceChange(payoutValue);
+            this.onBalanceChange(payoutValue, ball.type);
         }
 
         this.removeBall(ball);

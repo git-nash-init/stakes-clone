@@ -2,12 +2,6 @@ import { Link } from 'react-router-dom'
 import { GAMES } from '../games'
 import '../styles/home.css'
 
-const games = [
-    ...GAMES,
-    { id: 'dice', name: 'Dice', comingSoon: true },
-    { id: 'limbo', name: 'Limbo', comingSoon: true },
-]
-
 const categories = ['Stake Originals', 'Popular', 'New', 'Slots', 'Live Casino', 'Table Games', 'Jackpot', 'Providers']
 
 function GameCard({ game }) {
@@ -44,14 +38,14 @@ function HomePage() {
             <section className="home-page-hero">
                 <div className="hero-content">
                     <div className="hero-copy">
-                        <div className="hero-eyebrow">4 Original Games</div>
+                        <div className="hero-eyebrow">{GAMES.length} Original Games</div>
                         <h1 className="hero-title">
                             <span>Pick a game.</span>
                             <span>Chase the <strong>next win.</strong></span>
                         </h1>
                         <p className="hero-description">Instant play. Provably fair. Virtual points only.</p>
                         <div className="hero-actions">
-                            <button type="button" className="hero-primary-button">Play now</button>
+                            <Link to={GAMES[0].path} className="hero-primary-button">Play now</Link>
                             <a className="hero-secondary-link" href="#stake-originals" onClick={focusGames}>Browse games <span aria-hidden="true">→</span></a>
                         </div>
                     </div>
@@ -70,10 +64,10 @@ function HomePage() {
                 <div className="section-header-copy">
                     <p className="section-kicker">Play now</p>
                     <h2>Stake Originals</h2>
-                    <p>Four fast games. Pick your style and play with virtual points.</p>
+                    <p>Fast, fair games. Pick your style and play with virtual points.</p>
                 </div>
                 <div className="stake-games-grid">
-                    {games.map((game) => <GameCard key={game.id} game={game} />)}
+                    {GAMES.map((game) => <GameCard key={game.id} game={game} />)}
                 </div>
             </section>
         </div>

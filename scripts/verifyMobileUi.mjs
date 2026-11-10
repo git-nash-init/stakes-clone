@@ -59,7 +59,7 @@ async function waitFor(expression, timeout = 30000) {
 
 await Promise.all([send('Runtime.enable'), send('Page.enable')])
 
-const routes = ['/', '/mines', '/crash', '/dino', '/plinko']
+const routes = ['/', '/mines', '/crash', '/dino', '/plinko', '/dice', '/limbo', '/keno', '/hilo', '/blackjack', '/roulette']
 const viewports = [
     { width: 320, height: 568, label: 'phone-small', mobile: true, expectMobileShell: true },
     { width: 375, height: 667, label: 'phone-medium', mobile: true, expectMobileShell: true },
@@ -108,7 +108,7 @@ for (const viewport of viewports) {
             return {
                 route: location.pathname,
                 overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-                navLinks: nav ? nav.querySelectorAll('a').length : 0,
+                navLinks: nav ? nav.querySelectorAll('a, button').length : 0,
                 navVisible: nav ? getComputedStyle(nav).display !== 'none' : false,
                 headerTop: header?.getBoundingClientRect().top,
                 sheet: Boolean(sheet),

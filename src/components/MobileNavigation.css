@@ -17,7 +17,8 @@
         background: var(--bg-header);
     }
 
-    .mobile-bottom-nav a {
+    .mobile-bottom-nav a,
+    .mobile-bottom-nav button {
         display: flex;
         min-width: 44px;
         min-height: 44px;
@@ -26,19 +27,53 @@
         flex-direction: column;
         gap: 1px;
         border-radius: 8px;
+        border: 0;
+        background: transparent;
         color: var(--text-secondary);
+        font: inherit;
         font-size: 10px;
         font-weight: 700;
         text-decoration: none;
     }
 
-    .mobile-bottom-nav a.active {
+    .mobile-bottom-nav a.active,
+    .mobile-bottom-nav button.active {
         background: var(--primary-soft);
         color: var(--primary-hover);
     }
 
     .mobile-navigation-drawer .ant-drawer-content {
         background: var(--bg-sidebar);
+    }
+
+    .mobile-drawer-games {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .mobile-drawer-games a {
+        display: flex;
+        min-height: 44px;
+        align-items: center;
+        padding: 0 12px;
+        border: 1px solid var(--border-default);
+        border-radius: 8px;
+        background: var(--surface-1);
+        color: var(--text-primary);
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .mobile-drawer-games a.active {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+    }
+
+    .mobile-drawer-games p {
+        grid-column: 1 / -1;
+        color: var(--text-muted);
     }
 
     .mobile-drawer-field,

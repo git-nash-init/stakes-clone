@@ -1,0 +1,157 @@
+.bj-board {
+    display: flex;
+    width: min(100%, 760px);
+    flex-direction: column;
+    gap: 14px;
+}
+
+.bj-table {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 12px;
+    border-radius: 16px;
+    background: var(--surface-1);
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25), var(--shadow-sm);
+}
+
+.bj-seat {
+    display: flex;
+    max-width: 100%;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+}
+
+.bj-seat.is-active {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.bj-player-hands {
+    display: flex;
+    max-width: 100%;
+    justify-content: center;
+    gap: 10px;
+}
+
+.bj-hand {
+    display: flex;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 4px 4px 10px;
+    scrollbar-width: none;
+}
+
+.bj-hand .gk-card {
+    width: clamp(64px, 8.5vw, 92px);
+}
+
+.bj-hand .gk-card + .gk-card {
+    margin-left: clamp(-42px, -3.5vw, -24px);
+}
+
+.bj-seat-label {
+    display: flex;
+    min-height: 26px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.bj-total {
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--surface-3);
+    color: var(--text-primary);
+    font-weight: 800;
+}
+
+.bj-bet {
+    color: var(--text-muted);
+}
+
+.bj-result {
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--surface-3);
+    color: var(--text-primary);
+    font-weight: 800;
+    animation: gk-pop 0.2s ease-out;
+}
+
+.bj-result.is-win,
+.bj-result.is-blackjack {
+    background: var(--success);
+    color: #03210f;
+}
+
+.bj-result.is-lose,
+.bj-result.is-bust {
+    background: var(--danger);
+    color: #fff;
+}
+
+.bj-rules {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+.bj-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.bj-insurance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bj-insurance p {
+    grid-column: 1 / -1;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.bj-summary {
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.gk-result-chip.is-push {
+    background: var(--surface-2);
+}
+
+@media (max-width: 768px), (max-width: 932px) and (orientation: landscape) and (hover: none) {
+    .bj-board {
+        margin: 0 auto;
+        gap: 10px;
+    }
+
+    .bj-table {
+        gap: 8px;
+        padding: 10px 6px;
+    }
+
+    .bj-actions {
+        gap: 6px;
+    }
+
+    .bj-actions .gk-secondary {
+        padding: 0 4px;
+    }
+}

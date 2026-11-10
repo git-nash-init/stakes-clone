@@ -19,6 +19,7 @@ import Chart from 'chart.js/auto'
 
 const { Title, Text, Paragraph } = Typography;
 import { useWallet } from '../../context/WalletContext'
+import { useSound } from '../../hooks/useSound';
 import ProvablyFair from '../../utils/ProvablyFair'
 import MobileBetSheet from '../MobileBetSheet'
 import './MinesGame.css'
@@ -47,6 +48,8 @@ const StatsIcon = () => (
     </svg>
 )
 
+const SOUNDS = ['bet', 'gem', 'explosion', 'cashout'];
+
 function MinesGame() {
     const { balance, placeBet, addWinnings, showToast } = useWallet();
     const [isPlaying, setIsPlaying] = useState(false);
@@ -61,7 +64,9 @@ function MinesGame() {
 
     // Bottom Controls State
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [soundEnabled, setSoundEnabled] = useState(true);
+    const { play: playGameSound, muted: soundMuted, toggleMuted } = useSound(SOUNDS);
+    const soundEnabled = !soundMuted;
+    const startingRef = useRef(false);
 
     // Debug & Fairness State
     const [isDebugMode, setIsDebugMode] = useState(false);
@@ -329,10 +334,8 @@ function MinesGame() {
         };
     }, []);
 
-    // Audio setup (mock for now, or use standard web audio)
     const playSound = (type) => {
-        // Here we could implement sound effects
-        // console.log(`Playing sound: ${type}`)
+        playGameSound({ win: 'cashout', loss: 'explosion', gem: 'gem' }[type]);
     }
 
     const currentMultiplier = useMemo(() => {
@@ -360,25 +363,35 @@ function MinesGame() {
     };
 
     const startGame = async () => {
-        if (betAmount <= 0) return;
+        if (betAmount <= 0 || isPlaying || startingRef.current) return;
         const pf = fairnessRef.current;
         if (!pf) return;
-
-        const result = await pf.generateMinesPositions(minesCount);
-        const mines = new Set(result.minePositions);
-        const data = await pf.getFairnessData();
 
         if (!placeBet(betAmount)) {
             showToast('error', 'Insufficient Balance', `You need ₿${betAmount.toFixed(2)}`);
             return;
         }
 
-        setFairnessData(data);
-        setMineLocations(Array.from(mines));
-        setRevealedTiles([]);
-        setGameOverState(null);
-        setIsPlaying(true);
-        showToast('bet', 'Game Started', `₿${betAmount.toFixed(2)} bet placed`);
+        startingRef.current = true;
+        try {
+            const result = await pf.generateMinesPositions(minesCount);
+            const mines = new Set(result.minePositions);
+            const data = await pf.getFairnessData();
+
+            setFairnessData(data);
+            setMineLocations(Array.from(mines));
+            setRevealedTiles([]);
+            setGameOverState(null);
+            setIsPlaying(true);
+            playGameSound('bet');
+            showToast('bet', 'Game Started', `₿${betAmount.toFixed(2)} bet placed`);
+        } catch (error) {
+            console.error('Mines start failed', error);
+            addWinnings(betAmount);
+            showToast('error', 'Bet refunded', 'Something went wrong, so your stake was returned.');
+        } finally {
+            startingRef.current = false;
+        }
     };
 
     const endGame = (reason) => {
@@ -736,15 +749,13 @@ function MinesGame() {
                     {/* Bottom Controls */}
                     <div className="game-controls">
                         <Space>
-                            <Tooltip title="Settings">
-                                <Button type="text" icon={<SettingOutlined />} className="control-btn" />
-                            </Tooltip>
                             <Tooltip title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
                                 <Button type="text" icon={isFullscreen ? <FullscreenExitOutlined /> : <ExpandOutlined />} className="control-btn" onClick={toggleFullscreen} />
                             </Tooltip>
                             <Tooltip title={soundEnabled ? "Mute" : "Unmute"}>
-                                <Button type="text" icon={<SoundOutlined />} className={`control-btn ${!soundEnabled ? 'muted' : ''}`} onClick={() => setSoundEnabled(!soundEnabled)} />
+                                <Button type="text" icon={<SoundOutlined />} className={`control-btn ${!soundEnabled ? 'muted' : ''}`} onClick={toggleMuted} />
                             </Tooltip>
+                            {import.meta.env.DEV && (
                             <Tooltip title={isDebugMode ? "Disable Debug" : "Enable Debug (Peek Fairness)"}>
                                 <Button
                                     type="text"
@@ -754,6 +765,7 @@ function MinesGame() {
                                     onClick={() => setIsDebugMode(!isDebugMode)}
                                 />
                             </Tooltip>
+                            )}
                         </Space>
                         <span className="logo" style={{ color: 'var(--text-primary)' }}>Stake</span>
                         <Button type="text" icon={<SafetyCertificateOutlined />} className="fairness-btn" onClick={() => setFairnessModalOpen(true)}>

@@ -48,6 +48,7 @@ import PlayerBets from './PlayerBets'
 import PlayerResults from './PlayerResults'
 import ProvablyFair from '../../utils/ProvablyFair'
 import { useWallet } from '../../context/WalletContext'
+import { useSound } from '../../hooks/useSound'
 import './CrashGame.css'
 
 const { Text, Title, Paragraph } = Typography
@@ -60,6 +61,8 @@ const PHASE = {
 }
 
 const MOBILE_QUERY = '(max-width: 768px), (max-width: 932px) and (orientation: landscape) and (hover: none)'
+
+const SOUNDS = ['bet', 'tick', 'launch', 'cashout', 'win-big', 'explosion', 'click']
 
 function CrashGame() {
     const { balance, placeBet, addWinnings, showToast } = useWallet()
@@ -76,7 +79,9 @@ function CrashGame() {
     const [betPlaced, setBetPlaced] = useState(false)
     const [betAmount, setBetAmount] = useState(0)
     const [userBetData, setUserBetData] = useState(null)
-    const [soundEnabled, setSoundEnabled] = useState(true)
+    const { play: playGameSound, muted: soundMuted, toggleMuted } = useSound(SOUNDS)
+    const soundEnabled = !soundMuted
+    const cashoutLock = useRef(false)
 
     // Settings for optional features
     const [showPlayerBets, setShowPlayerBets] = useState(true)
@@ -360,6 +365,8 @@ function CrashGame() {
         let profit = 0;
         let didPlay = false;
 
+        playGameSound('explosion', { volume: betPlaced ? 1 : 0.35 })
+
         if (userBetData) {
             didPlay = true;
             if (betPlaced) {
@@ -384,7 +391,7 @@ function CrashGame() {
 
         setBetPlaced(false)
         setTimeout(startCountdown, 3000)
-    }, [startCountdown, userBetData, betPlaced, showToast])
+    }, [startCountdown, userBetData, betPlaced, showToast, playGameSound])
 
     // Handle player cashout notification
     const handlePlayerCashout = useCallback((cashoutData) => {
@@ -436,6 +443,8 @@ function CrashGame() {
     // Countdown timer
     useEffect(() => {
         if (phase === PHASE.WAITING && countdown > 0) {
+            const nearWholeSecond = Math.abs(countdown - Math.round(countdown)) < 0.05
+            if (nearWholeSecond && countdown < 3.5 && countdown > 0.5) playGameSound('tick', { volume: 0.7 })
             const timer = setTimeout(() => {
                 setCountdown(prev => prev - 0.1)
             }, 100)
@@ -445,10 +454,11 @@ function CrashGame() {
             generateCrashPoint().then(point => {
                 setCrashPoint(point)
                 setPhase(PHASE.RUNNING)
+                playGameSound('launch', { volume: 0.55 })
                 startTimeRef.current = Date.now()
             })
         }
-    }, [phase, countdown, generateCrashPoint])
+    }, [phase, countdown, generateCrashPoint, playGameSound])
 
     // Initial start
     useEffect(() => {
@@ -457,6 +467,7 @@ function CrashGame() {
     }, [startCountdown])
 
     const handleBet = (amount) => {
+        if (phase !== PHASE.WAITING || betPlaced) return
         if (amount > balance) {
             showToast('error', 'Insufficient Balance', `You need ₿${amount.toFixed(2)} but only have ₿${balance.toFixed(2)}`)
             return
@@ -465,6 +476,8 @@ function CrashGame() {
             showToast('error', 'Insufficient Balance', `You need ₿${amount.toFixed(2)} but only have ₿${balance.toFixed(2)}`)
             return
         }
+        cashoutLock.current = false
+        playGameSound('bet')
         setBetAmount(amount)
         setBetPlaced(true)
         setUserBetData({
@@ -478,9 +491,20 @@ function CrashGame() {
         showToast('bet', 'Bet Placed', `₿${amount.toFixed(2)}`, 2500)
     }
 
+    const handleCancelBet = () => {
+        if (phase !== PHASE.WAITING || !betPlaced) return
+        addWinnings(betAmount)
+        setBetPlaced(false)
+        setUserBetData(null)
+        playGameSound('click')
+        showToast('bet', 'Bet Cancelled', `₿${betAmount.toFixed(2)} returned`, 2500)
+    }
+
     // Handle cashout
     const handleCashout = () => {
-        if (phase === PHASE.RUNNING && betPlaced) {
+        if (phase === PHASE.RUNNING && betPlaced && !cashoutLock.current) {
+            cashoutLock.current = true
+            playGameSound(multiplier >= 10 ? 'win-big' : 'cashout')
             const winAmount = betAmount * multiplier
             const profit = winAmount - betAmount
             addWinnings(winAmount)
@@ -535,6 +559,7 @@ function CrashGame() {
                             betPlaced={betPlaced}
                             multiplier={multiplier}
                             onBet={handleBet}
+                            onCancel={handleCancelBet}
                             onCashout={handleCashout}
                         />
 
@@ -719,7 +744,7 @@ function CrashGame() {
                                     type="text"
                                     icon={<SoundOutlined />}
                                     className={`control-btn-antd ${!soundEnabled ? 'muted' : ''}`}
-                                    onClick={() => setSoundEnabled(!soundEnabled)}
+                                    onClick={toggleMuted}
                                 />
                             </Tooltip>
                         </Space>

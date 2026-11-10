@@ -41,11 +41,14 @@ import { DEFAULT_BALANCE, getBinColors, BIN_PAYOUTS } from './constants';
 import { dropPlinkoBall } from './dropPlinkoBall';
 import { ProvablyFair } from '../../utils/ProvablyFair';
 import { useWallet } from '../../context/WalletContext';
+import { useSound } from '../../hooks/useSound';
 import './PlinkoGame.css';
 
 const { Text, Title, Paragraph } = Typography;
 
 // Ball types with special effects
+const SOUNDS = ['peg', 'drop', 'land', 'win', 'win-big'];
+
 const BALL_TYPES = {
     normal: {
         id: 'normal',
@@ -117,7 +120,8 @@ function PlinkoGame() {
     const [rowCount, setRowCount] = useState(16);
     const [riskLevel, setRiskLevel] = useState('medium');
     const [winRecords, setWinRecords] = useState([]);
-    const [soundEnabled, setSoundEnabled] = useState(true);
+    const { play: playGameSound, muted: soundMuted, toggleMuted } = useSound(SOUNDS);
+    const soundEnabled = !soundMuted;
     const [selectedBallType, setSelectedBallType] = useState('normal');
 
     // Provably Fair System
@@ -188,11 +192,10 @@ function PlinkoGame() {
     const profitRangeMin = Math.abs(Math.min(minProfit, -1));
 
     // Handle balance change
-    const handleBalanceChange = useCallback((amount) => {
+    const handleBalanceChange = useCallback((amount, ballType) => {
         if (amount > 0) {
-            addWinnings(amount);
+            addWinnings(amount * (BALL_TYPES[ballType]?.multiplierBonus || 1));
         }
-        // Negative amounts (bets) are handled by placeBet in handleDropBall
     }, [addWinnings]);
 
     // Calculate bonus multiplier for special balls
@@ -238,12 +241,9 @@ function PlinkoGame() {
             setCurrentStreak(0);
         }
 
-        // Adjust balance for special ball cost difference
-        const costAdjustment = data.betAmount * (actualBall.cost - 1);
-        if (costAdjustment !== 0) {
-            handleBalanceChange(-costAdjustment);
-        }
-    }, [selectedBallType, calculateBonusMultiplier, handleBalanceChange, maxStreak]);
+        const binMultiplier = data.payout.multiplier;
+        playGameSound(binMultiplier >= 10 ? 'win-big' : binMultiplier >= 1 ? 'win' : 'land', { volume: binMultiplier >= 1 ? 0.8 : 0.7 });
+    }, [selectedBallType, calculateBonusMultiplier, maxStreak, playGameSound]);
 
     // Drag handler for widget
     const handleDragStart = useCallback((e) => {
@@ -450,7 +450,10 @@ function PlinkoGame() {
         selectedBallType,
         placeBet,
         isCancelled,
-    }), [currentBall, rowCount, provablyFair, selectedBallType, betAmount, placeBet]);
+    }).then((status) => {
+        if (status === 'dropped') playGameSound('drop', { volume: 0.6 });
+        return status;
+    }), [currentBall, rowCount, provablyFair, selectedBallType, betAmount, placeBet, playGameSound]);
 
     // Fullscreen toggle
     const toggleFullscreen = useCallback(() => {
@@ -592,9 +595,10 @@ function PlinkoGame() {
                                         type="text"
                                         icon={<SoundOutlined />}
                                         className={`control-btn ${soundEnabled ? '' : 'muted'}`}
-                                        onClick={() => setSoundEnabled(!soundEnabled)}
+                                        onClick={toggleMuted}
                                     />
                                 </Tooltip>
+                                {import.meta.env.DEV && (
                                 <Tooltip title={isDebugMode ? "Disable Debug" : "Enable Debug (Peek Fairness)"}>
                                     <Button
                                         type="text"
@@ -604,6 +608,7 @@ function PlinkoGame() {
                                         onClick={() => setIsDebugMode(!isDebugMode)}
                                     />
                                 </Tooltip>
+                                )}
                             </Space>
 
                             <span className="logo" style={{ color: 'var(--text-primary)' }}>Stake</span>
