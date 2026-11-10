@@ -8,7 +8,7 @@
   },
   "rewrites": [
     {
-      "source": "/(crash|plinko|dino|mines|dice|limbo|keno|hilo|blackjack|roulette|favourites|recent|challenges|my-bets)/?",
+      "source": "/(crash|plinko|dino|mines|dice|limbo|keno|hilo|blackjack|roulette|favourites|recent|challenges|my-bets)",
       "destination": { "service": "app", "path": "/index.html" }
     },
     {
