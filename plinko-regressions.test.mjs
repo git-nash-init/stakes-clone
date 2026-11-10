@@ -5,14 +5,25 @@ import { createServer } from 'vite'
 
 const root = new URL('.', import.meta.url)
 
-test('Vercel serves browser routes through the SPA entry point', () => {
+test('Vercel serves browser routes through the SPA entry point', async () => {
     const configUrl = new URL('vercel.json', root)
     assert.ok(existsSync(configUrl), 'vercel.json is missing')
 
     const config = JSON.parse(readFileSync(configUrl, 'utf8'))
-    assert.deepEqual(config.rewrites, [
-        { source: '/(.*)', destination: '/index.html' },
-    ])
+    assert.deepEqual(Object.keys(config.services), ['app'])
+    assert.equal(config.services.app.framework, 'vite')
+
+    const [spaRoutes, catchAll] = config.rewrites
+    assert.deepEqual(spaRoutes.destination, { service: 'app', path: '/index.html' })
+    assert.deepEqual(catchAll, { source: '/(.*)', destination: { service: 'app' } })
+
+    // Every game page must deep-link to the SPA; static files must not.
+    const { GAMES } = await import('./src/games.js')
+    const spaPattern = new RegExp(`^${spaRoutes.source}$`)
+    for (const game of GAMES) assert.match(game.path, spaPattern, `${game.path} is not served by index.html`)
+    for (const asset of ['/sounds/win.mp3', '/images/dice.avif', '/plinko-outcomes.json', '/assets/index.js']) {
+        assert.doesNotMatch(asset, spaPattern)
+    }
 })
 
 test('Plinko engine refuses more than 20 active balls', async () => {
